@@ -6,7 +6,7 @@ echo; ・特に更新がなければ、わざわざバックアップは取ら�
 echo; #############################################################
 rem # バックアップ対象を設定してね！
 SET GEN=5
-SET BACKUP_TARGET=tomcat
+SET BACKUP_TARGET=workspace
 
 rem # ちゃんと設定されてるか確認
 if ""%BACKUP_TARGET%""=="""" goto setting_error
