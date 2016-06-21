@@ -37,7 +37,7 @@ rem #プロセスID取得
 for /f %%i in ('powershell "foreach($p in (get-wmiobject win32_process -filter processid=$pid)){$ppid=$p.parentprocessid;}foreach($p in (get-wmiobject win32_process -filter processid=$ppid)){$p.parentprocessid;}"') do set PID=%%i
 set tmp1=tmp1.%TARGET%.%PID%.txt
 set tmp2=tmp2.%TARGET%.%PID%.txt
-set prefix=backup_
+set prefix=bk_
 
 rem #BK1とSRCを比較。差分がなければ即時終了(:size_zero)
 %WINDIR%\system32\robocopy "%TARGET%" "%prefix%%TARGET%_1" /L /E /XO /Z /R:3 /FFT /TEE /TS /LOG:%tmp1%
@@ -98,7 +98,7 @@ goto finish
 
 :finish
 IF EXIST %tmp1% del %tmp1%
-IF EXIST %tmp2% del %tmp%
+IF EXIST %tmp2% del %tmp2%
 
 cd %orgdir%
 timeout 5
