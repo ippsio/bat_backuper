@@ -26,7 +26,6 @@ if %ISNUMERIC% neq 1 (
 	timeout 5
 	exit 1
 )
-
 echo; #############################################################
 echo; ・%CD%\[%TARGET%] を[%GENERATION%]世代までバックアップします。
 echo; #############################################################
@@ -39,18 +38,26 @@ set tmp1=tmp1.%TARGET%.%PID%.txt
 set tmp2=tmp2.%TARGET%.%PID%.txt
 set prefix=bk_
 
-rem #BK1とSRCを比較。差分がなければ即時終了(:size_zero)
-%WINDIR%\system32\robocopy "%TARGET%" "%prefix%%TARGET%_1" /L /E /XO /Z /R:3 /FFT /TEE /TS /LOG:%tmp1%
-rem 日本語環境でも英語で出力される物もある。全部英語で統一してくれよ。
-FINDSTR /C:"Newer"       %tmp1% >> %tmp2%
-FINDSTR /C:"New Dir"     %tmp1% >> %tmp2%
-FINDSTR /C:"New File"    %tmp1% >> %tmp2%
-FINDSTR /C:"*EXTRA File" %tmp1% >> %tmp2%
-FINDSTR /C:"*EXTRA Dir"  %tmp1% >> %tmp2%
-FINDSTR /C:"より新しい"       %tmp1% >> %tmp2%
-FINDSTR /C:"新しいディレクトリ"     %tmp1% >> %tmp2%
-FINDSTR /C:"新しいファイル"    %tmp1% >> %tmp2%
-FOR %%F IN (%tmp2%) DO IF %%~zF EQU 0 GOTO size_zero
+SET WAIT_SEC=10
+call :compare_diff %WAIT_SEC%
+set /a do_compare=%ERRORLEVEL%
+if %do_compare% EQU 1 (
+  echo; ＞差分チェックします
+  rem #BK1とSRCを比較。差分がなければ即時終了(:size_zero)
+  %WINDIR%\system32\robocopy "%TARGET%" "%prefix%%TARGET%_1" /L /E /XO /Z /R:3 /FFT /TEE /TS /LOG:%tmp1%
+  rem 日本語環境でも英語で出力される物もある。全部英語で統一してくれよ。
+  FINDSTR /C:"Newer"       %tmp1% >> %tmp2%
+  FINDSTR /C:"New Dir"     %tmp1% >> %tmp2%
+  FINDSTR /C:"New File"    %tmp1% >> %tmp2%
+  FINDSTR /C:"*EXTRA File" %tmp1% >> %tmp2%
+  FINDSTR /C:"*EXTRA Dir"  %tmp1% >> %tmp2%
+  FINDSTR /C:"より新しい"       %tmp1% >> %tmp2%
+  FINDSTR /C:"新しいディレクトリ"     %tmp1% >> %tmp2%
+  FINDSTR /C:"新しいファイル"    %tmp1% >> %tmp2%
+  FOR %%F IN (%tmp2%) DO IF %%~zF EQU 0 GOTO size_zero
+) else (
+  echo; ＞差分チェック省略します
+)
 
 rem #バックアップとる（BK3->BK4, BK2->BK3, BK1->BK2）
 setlocal enabledelayedexpansion
@@ -70,7 +77,7 @@ for /L %%i in (%GENERATION%, -1, 2) do (
 				rmdir /S /Q !TO!.del
 			) else (
 				echo; ＞ROBOCOPY開始します（"!FROM!"→"!TO!"）
-				%WINDIR%\system32\robocopy !FROM! !TO! /COPY:DAT /DCOPY:T /R:3 /E /PURGE
+				%WINDIR%\system32\robocopy !FROM! !TO! /NP /COPY:DAT /DCOPY:T /R:3 /E /PURGE
 				rmdir /S /Q !TO!.del
 				echo; ＞世代を進めました（route2 [!%iFROM!, !iTO!]）
 			)
@@ -83,7 +90,7 @@ for /L %%i in (%GENERATION%, -1, 2) do (
 
 rem #バックアップとる（SRC->BK1）
 echo; ＞ROBOCOPY開始します（"%TARGET%"→"%prefix%%TARGET%_1"）
-%WINDIR%\system32\robocopy "%TARGET%" "%prefix%%TARGET%_1" /COPY:DAT /DCOPY:T /R:3 /E /PURGE
+%WINDIR%\system32\robocopy "%TARGET%" "%prefix%%TARGET%_1" /NP /COPY:DAT /DCOPY:T /R:3 /E /PURGE
 echo; ＞バックアップしました
 endlocal
 goto finish
@@ -101,5 +108,40 @@ IF EXIST %tmp1% del %tmp1%
 IF EXIST %tmp2% del %tmp2%
 
 cd %orgdir%
-timeout 5
+timeout /t 5 /NOBREAK
+exit
+
+rem #######################################################################################
+:compare_diff
+set dt=%date:~5%%time:~0,8%
+set dt=%dt:/=%
+set dt=%dt::=%
+set dt=%dt:.=%
+if "%dt:~0,1%" == "0" set dt=%dt:~1% rem 01月~09月は、先頭0をチョップ
+set /a dt_start=dt
+
+echo;
+echo;
+echo;　強制的にバックアップ取りたいなら、何かキー押して。早く。
+echo;　*********************************************************************
+echo;　　・放っておくと差分バックアップ（差分チェックするから遅い）
+echo;
+echo;　　・なんか押すと差分関係なく強制的バックアップ（差分見ない分、速い）
+echo;　***********************************************************************
+timeout /t %1
+
+set dt=%date:~5%%time:~0,8%
+set dt=%dt:/=%
+set dt=%dt::=%
+set dt=%dt:.=%
+if "%dt:~0,1%" == "0" set dt=%dt:~1% rem 01月~09月は、先頭0をチョップ
+set /a dt_end=dt
+
+set /a dt_diff=dt_end-dt_start
+if %dt_diff% LSS %1 (
+	exit /b 0
+) else (
+	exit /b 1
+)
+rem #######################################################################################
 
