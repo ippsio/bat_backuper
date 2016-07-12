@@ -6,6 +6,9 @@
 An bat file. For backup your folder.
 It copis your folder with no compression.
 
+![working_img](https://github.com/ippsio/bat_backuper/blob/master/working_img.png?raw=true "working_img")
+
+
 ## Why no compression.
 
 Work with/at/on too much heavy PC or environment, 
@@ -54,7 +57,7 @@ So rename this bat file to gen6.bat, then this creates backup folder for 6 gener
 
 ## Dependencies?
 No java needed. No ruby needed. No python needed.
-Only needs Windows. This is 100% pure bat.
+Only needs Windows(robocopy). This is 100% pure bat.
 
 
 
